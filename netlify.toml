@@ -1,0 +1,14 @@
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+# Scheduled monthly re-audit: runs at 09:00 UTC on the 1st of each month
+[[scheduled.functions]]
+  name = "monthly-reaudit"
+  cron = "0 9 1 * *"

@@ -1,0 +1,2 @@
+
+2025-10-07T18:24:39.508212Z — Added Audit PDF (open-in-new-tab) + Google Sheets logging toggle + /functions/sheet-update.

@@ -1,0 +1,164 @@
+<!doctype html><html><head>
+<meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>OptiAI — Core Engine (Mini)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>:root{color-scheme:dark}body{background:#0e0e10;color:#f5f5f7}.card{background:#151518;border:1px solid #26262b;border-radius:14px}.muted{color:#b7b7c2}.pill{background:#ff5a4e;color:#fff;border-radius:999px}</style>
+<link rel="canonical" href="/" />
+<meta name="description" content="Optimize your store or listing automatically. Paste a URL and get a tailored plan for Shopify, Amazon, or any site.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "OptiAI", "url": "/", "potentialAction": {"@type": "SearchAction", "target": "/?q={search_term_string}", "query-input": "required name=search_term_string"}}</script>
+</head>\1
+
+<!-- OptiAI Inline Auto Optimizer (no external page) -->
+<section id="optiai-inline" style="margin:24px 0">
+  <div id="optiai-inline-app"></div>
+</section>
+<script type="module" src="./optimizer/js/embed.js"></script>
+
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-2xl font-bold mb-4">OptiAI — Audit & Apply (Mini)</h1>
+  <section class="card p-5 space-y-3">
+    <div class="flex gap-2">
+      <input id=url class="flex-1 px-3 py-2 rounded bg-black/30 border border-[#26262b]" placeholder="https://store.com/products/handle">
+      <button id=fetch class="px-3 py-2 rounded bg-white/10 border border-[#26262b]">Auto-Fetch</button>
+    </div>
+    <div class="text-sm">Status: <span id=st>Idle</span></div>
+    <pre id=out class="text-xs bg-black/30 p-3 rounded overflow-auto max-h-64">—</pre>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <h3 class="font-semibold mb-1">Score</h3>
+        <div class="text-sm">Before: <span id=b>—</span></div>
+        <div class="text-sm">After: <span id=a>—</span></div>
+        <button id=sim class="mt-2 px-3 py-2 rounded bg-white/10 border border-[#26262b] text-sm">Simulate After</button>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-1">Shopify</h3>
+        <div class="flex gap-2">
+          <input id=shop class="flex-1 px-3 py-2 rounded bg-black/30 border border-[#26262b]" placeholder="brand.myshopify.com">
+          <button id=connect class="px-3 py-2 rounded bg-white/10 border border-[#26262b] text-sm">Connect</button>
+        </div>
+        <button id=apply class="mt-2 px-3 py-2 rounded bg-white/10 border border-[#26262b] text-sm w-full">Apply to Shopify</button>
+      </div>
+    </div>
+    <button id=zip class="px-4 py-2 rounded pill">Generate ZIP</button>
+  </section>
+
+<button id="auditBtn" class="px-3 py-2 rounded bg-white/10 border border-[#26262b] text-sm">Generate Audit Report</button>
+
+<!-- Google Sheets Logging (toggle) -->
+<div id="sheetBlock" class="mt-4">
+  <label class="text-sm flex items-center gap-2">
+    <input type="checkbox" id="sheetToggle">
+    <span>Enable Google Sheets logging</span>
+  </label>
+  <div id="sheetInputs" class="hidden mt-2 grid grid-cols-3 gap-2">
+    <input id="sheetRowId" class="px-3 py-2 rounded bg-black/30 border border-[#26262b]" placeholder="Row ID (optional)">
+    <button id="sheetSend" class="px-3 py-2 rounded bg-white/10 border border-[#26262b] text-sm">Update Sheet</button>
+    <span id="sheetMsg" class="text-xs opacity-70 self-center"></span>
+  </div>
+</div>
+</main>
+
+<script>
+const $ = s=>document.querySelector(s); const st = $("#st"); let product={signals:{}};
+const store={get shop(){return localStorage.getItem('opti_shop')||'';},set shop(v){localStorage.setItem('opti_shop',v||'');},get token(){return localStorage.getItem('opti_token')||'';},set token(v){localStorage.setItem('opti_token',v||'');}};
+(function(){const h=new URLSearchParams(location.hash.slice(1));if(h.get('shop')&&h.get('token')){store.shop=h.get('shop');store.token=h.get('token');history.replaceState(null,"",location.pathname+location.search);} $("#shop").value=store.shop;})();
+$("#fetch").onclick=async()=>{const url=$("#url").value.trim(); if(!url){st.textContent="Enter URL";return;}
+  st.textContent="Fetching…"; try{const r=await fetch('/.netlify/functions/scrape',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}); const d=await r.json(); product=d; $("#out").textContent=JSON.stringify(d,null,2); scoreBefore(); st.textContent="Done";}catch(e){st.textContent="Failed: "+e.message;}};
+function scoreBefore(){const s=product.signals||{}; let score=50; if(s.hasProductSchema)score+=15; if(s.hasFAQ)score+=10; if(s.hasBreadcrumb)score+=8; score+=Math.min(15,(s.imageCount||0)*3); if(s.hasVideo)score+=5; if(s.ratingValue&&s.reviewCount)score+=Math.min(10,Math.round(Number(s.ratingValue)/5*10)); $("#b").textContent=Math.max(0,Math.min(100,score));}
+$("#sim").onclick=()=>{let score=92; if((product.images||[]).length<3)score-=3; if(!(product.signals||{}).reviewCount)score-=3; $("#a").textContent=Math.max(80,Math.min(100,score));};
+$("#connect").onclick=async()=>{const shop=$("#shop").value.trim(); if(!shop)return alert("Enter shop domain"); const r=await fetch('/.netlify/functions/oauth-start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shop})}); const d=await r.json(); if(d.url)location.href=d.url;};
+$("#apply").onclick=async()=>{if(!store.token||!$("#shop").value.trim())return alert("Connect Shopify first."); const snip=document.getElementById('snip').textContent; const body={shop:$("#shop").value.trim(), token:store.token, snippetName:"opti_ai_schema", snippetValue:snip}; const r=await fetch('/.netlify/functions/shopify-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const d=await r.json(); alert(d.ok?"Applied":"Failed");};
+$("#zip").onclick=async()=>{const zip=new JSZip(); zip.file("universal/product_schema.jsonld", JSON.stringify({"@context":"https://schema.org","@type":"Product","name":product.name||"Product","image":product.images||[]},null,2)); zip.file("universal/faq_schema.jsonld", JSON.stringify({"@context":"https://schema.org","@type":"FAQPage","mainEntity":[]},null,2)); zip.file("universal/breadcrumb_schema.jsonld", JSON.stringify({"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[]},null,2)); zip.file("shopify/opti_ai_schema.liquid", document.getElementById('snip').textContent); const blob=await zip.generateAsync({type:"blob"}); saveAs(blob,"opti_ai_universal_pack.zip");};
+</script>
+
+<script type="text/plain" id="snip">{% comment %} OptiAI schema snippet minimal {% endcomment %}
+{% if template.name == 'product' %}
+<script type="application/ld+json">{ "@"+"context":"https://schema.org","@"+"type":"Product","name": {{ product.title | json }} }</script>
+<script type="application/ld+json">{ "@"+"context":"https://schema.org","@"+"type":"FAQPage","mainEntity":[{ "@"+"type":"Question","name":"Shipping & Returns","acceptedAnswer":{"@"+"type":"Answer","text":"Fast shipping. Easy returns within 30 days."}}]}</script>
+<script type="application/ld+json">{ "@"+"context":"https://schema.org","@"+"type":"BreadcrumbList","itemListElement":[{ "@"+"type":"ListItem","position":1,"name":"Home"}]}</script>
+{% endif %}</script>
+
+<!-- One-page Audit Report (hidden) -->
+<div id="auditReport" class="hidden" style="background:#0e0e10;color:#f5f5f7;width:842px;min-height:1191px;padding:24px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:18px;height:18px;border-radius:999px;background:#ff5a4e;"></div>
+      <div style="font-weight:700;">OptiAI <span id="arStore">[Store]</span> Visibility Audit</div>
+    </div>
+    <div id="arDate" style="opacity:.7;font-size:12px;"></div>
+  </div>
+  <div id="arUrl" style="opacity:.7;font-size:12px;margin-bottom:14px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div style="background:#151518;border:1px solid #26262b;border-radius:12px;padding:12px;">
+      <div style="opacity:.7;font-size:12px;">Overall Visibility</div>
+      <div style="font-size:28px;font-weight:800;"><span id="arBefore">—</span> → <span id="arAfter">—</span></div>
+      <div id="arSummary" style="font-size:12px;opacity:.85;margin-top:6px;"></div>
+    </div>
+    <div style="background:#151518;border:1px solid #26262b;border-radius:12px;padding:12px;">
+      <div style="opacity:.7;font-size:12px;">Estimated Impact (Conservative)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;font-size:12px;">
+        <div><div style="opacity:.7;">CTR</div><div id="arCTR" style="font-weight:700;">—</div></div>
+        <div><div style="opacity:.7;">Orders</div><div id="arOrders" style="font-weight:700;">—</div></div>
+        <div><div style="opacity:.7;">Monthly Revenue</div><div id="arRev" style="font-weight:700;">—</div></div>
+        <div><div style="opacity:.7;">Confidence</div><div id="arConf" style="font-weight:700;">Medium</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="background:#151518;border:1px solid #26262b;border-radius:12px;padding:12px;margin-bottom:14px;">
+    <div style="font-weight:600;margin-bottom:8px;">Breakdown</div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;">
+      <thead>
+        <tr style="opacity:.7;text-align:left;">
+          <th style="padding:6px 4px;">Category</th>
+          <th style="padding:6px 4px;">Before</th>
+          <th style="padding:6px 4px;">After</th>
+          <th style="padding:6px 4px;">Lift</th>
+        </tr>
+      </thead>
+      <tbody id="arBreakdown"></tbody>
+    </table>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div style="background:#151518;border:1px solid #26262b;border-radius:12px;padding:12px;">
+      <div style="font-weight:600;margin-bottom:6px;">Top Fixes Implemented</div>
+      <ul id="arFixes" style="padding-left:18px;list-style:disc;font-size:12px;opacity:.95;"></ul>
+    </div>
+    <div style="background:#151518;border:1px solid #26262b;border-radius:12px;padding:12px;">
+      <div style="font-weight:600;margin-bottom:6px;">Next 30 Days</div>
+      <ul style="padding-left:18px;list-style:disc;font-size:12px;opacity:.95;">
+        <li>Add 3–5 high-quality product images (lifestyle + detail)</li>
+        <li>Surface aggregate rating on PDP</li>
+        <li>Short product video (15–30s)</li>
+        <li>2 relevant internal links to this PDP</li>
+      </ul>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #26262b;padding-top:8px;font-size:11px;opacity:.75;">
+    <div>admin@optiaistudio.com</div>
+    <div>Generated by OptiAI — AI Visibility Optimization Suite</div>
+  </div>
+</div>
+
+<script src="script_audit.js"></script>
+<script src="script_sheet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- Optional: quick enroll for monthly re-audits -->
+<script>
+async function optiaiEnroll(url, email, name){
+  try{
+    const r = await fetch('/.netlify/functions/add-client', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({url, email, name})
+    });
+    const j = await r.json().catch(()=>({}));
+    alert(j.ok ? 'Enrolled for monthly re-audits!' : 'Saved.');
+  }catch(e){ alert('Could not enroll: ' + e.message); }
+}
+</script>
+
+</body></html>
