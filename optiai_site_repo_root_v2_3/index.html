@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OptiAI</title>
+  <meta name="description" content="Auto-detect Amazon/Shopify/regular product pages and tailor an optimization plan.">
+  <meta name="optiai-version" content="2.3">
+  <link rel="canonical" href="/">
+  <style>
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1020;color:#e5e7eb}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    .topnav{display:flex;gap:12px;margin-bottom:8px}
+    .topnav a{color:#e5e7eb;text-decoration:none;padding:8px 12px;border:1px solid #1f2937;border-radius:10px;background:#0f172a}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topnav">
+      <a href="/">Home</a>
+      <a href="/optimizer/">Advanced Optimizer</a>
+      <a href="/tools/scoring.html">Scoring Sheet</a>
+    </div>
+    <!-- Inline tool -->
+    <section id="optiai-inline" style="margin:24px 0; position:relative; z-index:9999; pointer-events:auto;">
+      <div id="optiai-inline-app"></div>
+      <div id="optiai-inline-debug" style="font-size:12px;color:#94a3b8;margin-top:8px"></div>
+    </section>
+  </div>
+  <script type="module" src="./optimizer/js/embed.js?v=2.3"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OptiAI Scoring Sheet</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b1020;color:#e5e7eb}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid #1f2937;padding:10px}
+    th{background:#0f172a}
+    input[type=number]{width:80px}
+    .btn{background:#ef4444;border:1px solid #1f2937;color:#fff;border-radius:10px;padding:10px 12px;cursor:pointer}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:12px;color:#94a3b8}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <a class="btn" href="/">← Back to Home</a>
+      <div class="small">Use this sheet to score listings and prioritize fixes.</div>
+    </div>
+    <h1>Scoring Sheet</h1>
+    <table id="tbl">
+      <thead>
+        <tr><th>Category</th><th>Weight</th><th>Score (0–10)</th><th>Weighted</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Title & Keywords</td><td><input type="number" value="3" step="1" min="0"/></td><td><input type="number" value="7" step="1" min="0" max="10"/></td><td class="w"></td></tr>
+        <tr><td>Images</td><td><input type="number" value="3" step="1" min="0"/></td><td><input type="number" value="6" step="1" min="0" max="10"/></td><td class="w"></td></tr>
+        <tr><td>Content/A+ or PDP</td><td><input type="number" value="2" step="1" min="0"/></td><td><input type="number" value="6" step="1" min="0" max="10"/></td><td class="w"></td></tr>
+        <tr><td>Schema/Tech SEO</td><td><input type="number" value="1" step="1" min="0"/></td><td><input type="number" value="5" step="1" min="0" max="10"/></td><td class="w"></td></tr>
+        <tr><td>Reviews/Social Proof</td><td><input type="number" value="1" step="1" min="0"/></td><td><input type="number" value="7" step="1" min="0" max="10"/></td><td class="w"></td></tr>
+      </tbody>
+      <tfoot>
+        <tr><th colspan="3" style="text-align:right">Total</th><th id="total"></th></tr>
+      </tfoot>
+    </table>
+    <p class="small">Tip: Adjust weights per client. Anything &lt; 6 should get an action item this month.</p>
+    <button class="btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+<script>
+function recalc(){
+  let total=0;
+  document.querySelectorAll('#tbl tbody tr').forEach(tr=>{
+    const w=parseFloat(tr.cells[1].querySelector('input').value||0);
+    const s=parseFloat(tr.cells[2].querySelector('input').value||0);
+    const wv = w*s;
+    tr.querySelector('.w').textContent = wv.toFixed(1);
+    total += wv;
+  });
+  document.getElementById('total').textContent = total.toFixed(1);
+}
+function exportCSV(){
+  let rows=[['Category','Weight','Score','Weighted']];
+  document.querySelectorAll('#tbl tbody tr').forEach(tr=>{
+    rows.push([tr.cells[0].innerText,
+               tr.cells[1].querySelector('input').value,
+               tr.cells[2].querySelector('input').value,
+               tr.querySelector('.w').textContent]);
+  });
+  rows.push(['Total','','',document.getElementById('total').textContent]);
+  const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('
+');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='scoring_sheet.csv'; a.click(); URL.revokeObjectURL(url);
+}
+document.getElementById('tbl').addEventListener('input', recalc);
+recalc();
+</script>
+</body>
+</html>
