@@ -1,0 +1,14 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# CORS for functions (relaxed; tighten if needed)
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+# Scheduled monthly re-audit: 09:00 UTC on the 1st
+[[scheduled.functions]]
+  name = "monthly-reaudit"
+  cron = "0 9 1 * *"
